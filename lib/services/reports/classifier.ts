@@ -28,7 +28,8 @@ export interface ReportClassifier {
 
 /** The only classifier shipped in the MVP: always "sin clasificar". */
 export class UnavailableClassifier implements ReportClassifier {
-  async classify(): Promise<ReportClassification | null> {
+  async classify(text: string): Promise<ReportClassification | null> {
+    void text; // never sent anywhere in the MVP
     return null;
   }
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SettingsIcon } from "lucide-react";
 import { NewsCard } from "@/components/news/news-card";
 import { PageHeader } from "@/components/mock-badge";
+import { IosInstallBanner } from "@/components/push/ios-install-banner";
 import { Button } from "@/components/ui/button";
 import { recordImpressions } from "@/lib/services/interactions";
 import { getFeedForUser } from "@/lib/services/news";
@@ -41,6 +42,8 @@ export default async function HomePage() {
           </Button>
         }
       />
+
+      <IosInstallBanner />
 
       {topicIds.length === 0 && (
         <div className="mb-4 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">

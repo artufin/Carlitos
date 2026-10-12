@@ -106,6 +106,10 @@ Notas: si el usuario desactiva los avisos en Ajustes de iOS, el servicio push re
 
 Leyenda: ✅ funcional · 🎨 solo visual · 🧪 maqueta sin backend · 📐 interfaz/modelo/documentación sin implementación · ⚠️ sin protección · ⛔ fuera de alcance.
 
+### Navegación y vistas mock
+
+La barra inferior tiene Inicio (noticias), Calendario, Logros, CAiPuntos y "Más" (Manual novato, Galería, Préstamos, Pagos, Reportes, Preferencias y Admin). Las vistas marcadas con la etiqueta **Maqueta** no tienen backend: sus datos salen de `lib/mocks/*.ts` (tipados en `lib/types/*.ts`), el estado vive en memoria y se pierde al recargar. `/manual` se carga de forma diferida con `next/dynamic` y es la única vista con animación intensa (Motion); todas respetan `prefers-reduced-motion`.
+
 ## Decisiones tomadas
 
 Resumen (detalle en [docs/DECISIONS.md](docs/DECISIONS.md)):

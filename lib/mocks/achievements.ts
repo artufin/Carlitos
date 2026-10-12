@@ -1,0 +1,198 @@
+// NOT IMPLEMENTED (MVP): mock missions and badges for the "Logros" view.
+// All missions are safe: nothing risky, no damage to facilities and no
+// restricted areas. Replace with real data when the feature is wired.
+
+import type { Achievement, AchievementBadge, AchievementCategory } from "@/lib/types/achievement";
+
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+
+export const achievementCategories: AchievementCategory[] = [
+  { slug: "campus", label: "Campus", description: "Conoce los rincones de San Joaquín." },
+  { slug: "academico", label: "Académico", description: "Sobrevivir el semestre también cuenta." },
+  { slug: "comunidad", label: "Comunidad", description: "La escuela es la gente." },
+  { slug: "carretes", label: "Carretes", description: "Lo que pasa en el CAi, queda en el CAi." },
+];
+
+export const mockAchievements: Achievement[] = [
+  // Campus
+  {
+    id: "ach-bano-k5",
+    title: "Ir al baño del 5to piso de las K",
+    description: "El baño más tranquilo del campus. Dicen que hasta tiene jabón.",
+    category: "campus",
+    points: 20,
+    requires: null,
+    unlockHint: null,
+    completedAt: daysAgo(12),
+    evidenceUrl: null,
+  },
+  {
+    id: "ach-cafe-casinos",
+    title: "Tomarte un café en cada casino del campus",
+    description: "Uno por casino, sin repetir. Vale el de máquina, pero con dignidad.",
+    category: "campus",
+    points: 40,
+    requires: null,
+    unlockHint: null,
+    completedAt: null,
+    evidenceUrl: null,
+  },
+  {
+    id: "ach-patio-escondido",
+    title: "Almorzar en el patio más escondido que encuentres",
+    description: "Si llegaste con la bandeja hasta ahí, ya ganaste.",
+    category: "campus",
+    points: 20,
+    requires: "ach-cafe-casinos",
+    unlockHint: "Completa primero el tour de cafés por los casinos.",
+    completedAt: null,
+    evidenceUrl: null,
+  },
+  // Académico
+  {
+    id: "ach-noche-biblio",
+    title: "Estudiar una noche entera en la biblioteca",
+    description: "Con sala reservada, snacks y la voluntad de un ingeniero en semana de pruebas.",
+    category: "academico",
+    points: 50,
+    requires: null,
+    unlockHint: null,
+    completedAt: null,
+    evidenceUrl: null,
+  },
+  {
+    id: "ach-charla",
+    title: "Asistir a una charla de la escuela",
+    description: "Cualquier charla cuenta, incluso si fuiste por el coffee break.",
+    category: "academico",
+    points: 25,
+    requires: null,
+    unlockHint: null,
+    completedAt: daysAgo(30),
+    evidenceUrl: null,
+  },
+  {
+    id: "ach-ayudantia",
+    title: "Ir a una ayudantía de un ramo que no tomas",
+    description: "Por curiosidad, por un amigo o porque la sala tenía calefacción.",
+    category: "academico",
+    points: 30,
+    requires: "ach-charla",
+    unlockHint: "Primero asiste a una charla de la escuela.",
+    completedAt: null,
+    evidenceUrl: null,
+  },
+  // Comunidad
+  {
+    id: "ach-otra-generacion",
+    title: "Conocer a alguien de otra generación",
+    description: "Preséntate, pregunta qué ramos tomó y anota los consejos.",
+    category: "comunidad",
+    points: 25,
+    requires: null,
+    unlockHint: null,
+    completedAt: daysAgo(40),
+    evidenceUrl: null,
+  },
+  {
+    id: "ach-asamblea",
+    title: "Participar en una asamblea del CAi",
+    description: "Levantar la mano es opcional. Quedarse hasta el final, heroico.",
+    category: "comunidad",
+    points: 35,
+    requires: null,
+    unlockHint: null,
+    completedAt: null,
+    evidenceUrl: null,
+  },
+  {
+    id: "ach-voluntariado",
+    title: "Ayudar en una actividad del Centro de Alumnos",
+    description: "Armar mesas, repartir bebidas o cuidar la entrada. Todo suma.",
+    category: "comunidad",
+    points: 40,
+    requires: "ach-asamblea",
+    unlockHint: "Ve primero a una asamblea para enterarte de las actividades.",
+    completedAt: null,
+    evidenceUrl: null,
+  },
+  // Carretes
+  {
+    id: "ach-primer-carrete",
+    title: "Ir a tu primer carrete del CAi",
+    description: "Llega temprano, saluda a los novatos y aprende el himno de la escuela.",
+    category: "carretes",
+    points: 30,
+    requires: null,
+    unlockHint: null,
+    completedAt: null,
+    evidenceUrl: null,
+  },
+  {
+    id: "ach-alianza",
+    title: "Participar en una alianza",
+    description: "Pintarse la cara, gritar el nombre de tu alianza y perder con orgullo.",
+    category: "carretes",
+    points: 45,
+    requires: "ach-primer-carrete",
+    unlockHint: "Desbloquea al ir a tu primer carrete del CAi.",
+    completedAt: null,
+    evidenceUrl: null,
+  },
+  {
+    id: "ach-foto-grupal",
+    title: "Salir en la foto grupal de un evento",
+    description: "Al fondo, de lado o tapado por un globo, pero ahí estás.",
+    category: "carretes",
+    points: 15,
+    requires: "ach-primer-carrete",
+    unlockHint: "Desbloquea al ir a tu primer carrete del CAi.",
+    completedAt: null,
+    evidenceUrl: null,
+  },
+];
+
+export const achievementBadges: AchievementBadge[] = [
+  {
+    id: "badge-explorador",
+    name: "Explorador",
+    description: "Completaste tu primera misión de campus.",
+    icon: "map",
+    requiredAchievements: ["ach-bano-k5"],
+  },
+  {
+    id: "badge-sociable",
+    name: "Sociable",
+    description: "Conociste gente de otra generación.",
+    icon: "users",
+    requiredAchievements: ["ach-otra-generacion"],
+  },
+  {
+    id: "badge-academico",
+    name: "Oyente",
+    description: "Asististe a una charla de la escuela.",
+    icon: "star",
+    requiredAchievements: ["ach-charla"],
+  },
+  {
+    id: "badge-nocturno",
+    name: "Nocturno",
+    description: "Sobreviviste una noche entera en la biblioteca.",
+    icon: "moon",
+    requiredAchievements: ["ach-noche-biblio"],
+  },
+  {
+    id: "badge-cafetero",
+    name: "Cafetero",
+    description: "Probaste el café de todos los casinos.",
+    icon: "coffee",
+    requiredAchievements: ["ach-cafe-casinos"],
+  },
+  {
+    id: "badge-carretero",
+    name: "Carretero",
+    description: "Fuiste a tu primer carrete y a una alianza.",
+    icon: "party",
+    requiredAchievements: ["ach-primer-carrete", "ach-alianza"],
+  },
+];

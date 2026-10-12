@@ -1,0 +1,229 @@
+// Prisma schema for the CAi PWA MVP.
+// Compatible with Neon and Supabase (PostgreSQL). DIRECT_URL is optional and
+// only used by migrations when DATABASE_URL points at a connection pooler.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+/// A user. In the MVP every user is an anonymous "device user" identified by
+/// the signed cookie (deviceId). When real auth lands, `email` is filled and
+/// the device user is migrated to the real one (see docs/DECISIONS.md).
+model User {
+  id        String   @id @default(uuid())
+  deviceId  String   @unique
+  email     String?  @unique
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  topics        UserTopic[]
+  subscriptions PushSubscription[]
+  reports       Report[]
+  deliveries    PushDelivery[]
+  jobs          NotificationJob[]
+  interactions  Interaction[]
+  loginCodes    LoginCode[]
+}
+
+/// Configurable list of topics (seeded). Users subscribe to topics and news
+/// belong to exactly one topic.
+model Topic {
+  id          String  @id @default(uuid())
+  slug        String  @unique
+  name        String
+  description String?
+  emoji       String?
+  sortOrder   Int     @default(0)
+  active      Boolean @default(true)
+
+  users UserTopic[]
+  news  News[]
+}
+
+model UserTopic {
+  userId    String
+  topicId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([userId, topicId])
+  @@index([topicId])
+}
+
+model News {
+  id          String    @id @default(uuid())
+  title       String
+  summary     String
+  body        String
+  topicId     String
+  publishedAt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  /// Whether the admin ticked "send push notification" when saving.
+  notifyRequested Boolean  @default(false)
+  /// When the push send for this news was last triggered.
+  notifiedAt      DateTime?
+
+  topic        Topic             @relation(fields: [topicId], references: [id])
+  deliveries   PushDelivery[]
+  jobs         NotificationJob[]
+  interactions Interaction[]
+
+  @@index([topicId, publishedAt])
+}
+
+/// A Web Push subscription (one per browser/device). `endpoint` is unique.
+model PushSubscription {
+  id         String    @id @default(uuid())
+  userId     String
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries PushDelivery[]
+
+  @@index([userId])
+}
+
+enum DeliveryStatus {
+  SENT
+  FAILED
+  /// The push service answered 404/410: the subscription was deleted.
+  GONE
+}
+
+/// Log of every push send attempt (one row per subscription per news).
+model PushDelivery {
+  id             String         @id @default(uuid())
+  newsId         String
+  userId         String
+  subscriptionId String?
+  status         DeliveryStatus
+  statusCode     Int?
+  error          String?
+  createdAt      DateTime       @default(now())
+
+  news         News              @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription PushSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([newsId, createdAt])
+}
+
+enum JobStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+/// NOT IMPLEMENTED (MVP): a real queue worker. In the MVP, `InlineQueue` sends
+/// up to a cap per invocation and records the remaining recipients here as
+/// PENDING jobs. See lib/services/push/queue.ts and docs/DECISIONS.md.
+model NotificationJob {
+  id            String    @id @default(uuid())
+  userId        String
+  newsId        String
+  status        JobStatus @default(PENDING)
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  news News @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, newsId])
+  @@index([status, nextAttemptAt])
+}
+
+enum ReportStatus {
+  /// Saved but not classified yet (no API key, or the classifier failed).
+  UNCLASSIFIED
+  RECEIVED
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+/// NOT IMPLEMENTED (MVP): reports are a mock view in the MVP and nothing is
+/// written to this table. The model is kept so the real implementation
+/// (lib/services/reports) does not need schema changes.
+model Report {
+  id       String  @id @default(uuid())
+  /// Null when the student chose to report anonymously.
+  userId   String?
+  text     String
+  /// Category chosen by the student (optional, free slug from the seed list).
+  category String?
+  status   ReportStatus @default(UNCLASSIFIED)
+
+  // Classification produced by ReportClassifier (null until classified).
+  classCategory    String?
+  classPlace       String?
+  classSeverity    Int?
+  classSummary     String?
+  classMissingInfo Boolean?
+  classifiedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
+
+/// NOT IMPLEMENTED (MVP): one-time login codes for the future email auth.
+model LoginCode {
+  id         String    @id @default(uuid())
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  userId     String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email, createdAt])
+}
+
+enum InteractionType {
+  IMPRESSION
+  CLICK
+}
+
+/// Impressions and clicks on news, collected from day one for the future
+/// recommender (NOT IMPLEMENTED (MVP): no ML, only topic matching).
+model Interaction {
+  id        String          @id @default(uuid())
+  userId    String
+  newsId    String
+  type      InteractionType
+  createdAt DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  news News @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  @@index([newsId, type])
+  @@index([userId, createdAt])
+}

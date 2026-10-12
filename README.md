@@ -30,7 +30,7 @@ pnpm test        # vitest
 pnpm build       # prisma generate && next build
 pnpm check       # typecheck + lint + test + build
 pnpm db:studio   # Prisma Studio
-node scripts/generate-icons.mjs   # regenera los íconos PNG de public/icons
+python scripts/generate-icons.py  # regenera los íconos de public/icons desde public/logo.png (requiere Pillow)
 ```
 
 Variables de entorno: ver [.env.example](.env.example). `SESSION_SECRET` firma la cookie de dispositivo (`openssl rand -base64 32`). `CRON_SECRET` protege `/api/cron/digest`.

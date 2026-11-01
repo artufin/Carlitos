@@ -48,7 +48,7 @@ Copia `publicKey` en `NEXT_PUBLIC_VAPID_PUBLIC_KEY` y `privateKey` en `VAPID_PRI
 
 1. Crea un proyecto en [Neon](https://neon.tech) y copia la cadena de conexión **pooled** (para `DATABASE_URL`) y la **direct** (para `DIRECT_URL`).
 2. Importa el repo en Vercel. Framework: Next.js. Build command por defecto (`pnpm build` ejecuta `prisma generate && next build`).
-3. Variables de entorno en Vercel: `DATABASE_URL`, `DIRECT_URL`, `SESSION_SECRET`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET`, `RESEND_API_KEY` y `EMAIL_FROM` (sin ellas el registro responde 503 en producción) y, opcionalmente, `NEXT_PUBLIC_APP_URL` (si no, se usa `VERCEL_URL`).
+3. Variables de entorno en Vercel: `DATABASE_URL`, `DIRECT_URL`, `SESSION_SECRET`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET`, `BREVO_API_KEY` (o `RESEND_API_KEY`) y `EMAIL_FROM` (sin clave de correo el registro responde 503 en producción) y, opcionalmente, `NEXT_PUBLIC_APP_URL` (si no, se usa `VERCEL_URL`).
 4. Crea las tablas y el seed desde tu máquina apuntando a Neon:
    ```bash
    DATABASE_URL="postgresql://...direct..." DIRECT_URL="postgresql://...direct..." pnpm db:push
@@ -77,7 +77,7 @@ Notas: si el usuario desactiva los avisos en Ajustes de iOS, el servicio push re
 | Función | Estado | Notas |
 |---|---|---|
 | Sesión anónima por dispositivo (cookie httpOnly firmada) | ✅ Incluido | `proxy.ts`, `lib/session/*` |
-| Cuentas: registro con código por correo, login, logout | ✅ Incluido | Cualquier correo, contraseña mín. 8. `/login`, `/cuenta`, `app/api/auth/*`, `lib/auth/*`. Correo vía Resend (`RESEND_API_KEY`); en local sin clave el código sale en la consola |
+| Cuentas: registro con código por correo, login, logout | ✅ Incluido | Cualquier correo, contraseña mín. 8. `/login`, `/cuenta`, `app/api/auth/*`, `lib/auth/*`. Correo vía Brevo (`BREVO_API_KEY`, gratis sin dominio) o Resend (`RESEND_API_KEY`); en local sin clave el código sale en la consola |
 | Bloqueo de login | ✅ Incluido | 3 intentos y luego espera progresiva de 30 s, 1 min, 2 min… hasta 15 min (`lib/auth/throttle.ts`) |
 | Recuperar contraseña, rol admin por `ADMIN_EMAILS` | 📐 Diseñado | Ver "Cuentas" en `docs/DECISIONS.md` |
 | Acceso admin | ⚠️ Abierto | `requireAdmin()` no verifica nada (`lib/auth/admin.ts`). No usar con datos reales |

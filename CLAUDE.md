@@ -27,6 +27,19 @@ pnpm db:seed      # temas y noticias de ejemplo
 
 Variables de entorno en [.env.example](.env.example). **La app necesita PostgreSQL para funcionar** (usuarios, temas, noticias, cuentas). Neon free sirve.
 
+En local el usuario usa su PostgreSQL 18 instalado, base `cai`: `DATABASE_URL` y `DIRECT_URL` = `postgresql://postgres:<su contraseña>@localhost:5432/cai`, **sin** `?sslmode=require` (eso es para Neon). Caracteres especiales de la contraseña van codificados en la URL (`@` → `%40`). Error `P1001 … host:5432` = el `.env` aún tiene los valores de ejemplo. Nunca leas ni muestres el `.env`: tiene su contraseña.
+
+## Problemas conocidos en Windows
+
+- `EPERM: operation not permitted, rename …` en `prisma generate` / `pnpm install`: un proceso `node.exe` (normalmente un `next dev` que quedó vivo) tiene bloqueado el motor de Prisma. Cerrar esos procesos y reintentar. Al terminar pruebas, asegúrate de que ningún `next dev` tuyo quede corriendo (detener la tarea en segundo plano no siempre mata los procesos hijos), y no puedes matar procesos con `Stop-Process` sin permiso: pídeselo al usuario.
+- El aviso "Update available! 10.34.5 → 12.x" de pnpm se ignora: el proyecto está fijado a 10.34.5.
+
+## Cómo trabaja el usuario
+
+- Es principiante: explica en español simple, con comandos listos para copiar y paso a paso.
+- Corre los comandos en una PowerShell aparte y pega los errores. Si los corre en el panel Terminal de la app, se pueden leer con `read_terminal`.
+- Repo: `origin` = https://github.com/artufin/Carlitos (el usuario tiene permiso de escritura). El trabajo de cuentas está en la rama `cuentas`, subida a `origin/cuentas`; `main` sigue como el original hasta que se una (PR o merge). Haz commit y push solo cuando lo pida, nunca directo a `main` ni con `--force`, y verifica antes que `.env` no esté en el commit.
+
 ## Estructura
 
 - `app/` rutas. `app/api/*` route handlers con `runtime = "nodejs"`, envueltos en `withErrorHandling` y validando con `parseJsonBody(request, schema)` (`lib/http.ts`). Errores de dominio: lanzar `HttpError(status, mensajeEnEspañol)`.
@@ -39,7 +52,7 @@ Variables de entorno en [.env.example](.env.example). **La app necesita PostgreS
 
 - `proxy.ts` asegura la cookie firmada `cai_device` en cada petición (no toca la base).
 - Cuentas con cualquier correo + contraseña (mín. `PASSWORD_MIN_LENGTH` = 8): `app/api/auth/{register,verify,resend,login,logout,me}`, `lib/auth/auth-service.ts`, `lib/auth/password.ts` (scrypt), `lib/validation/auth.ts` (compartido con el cliente: sin imports de servidor).
-- Registro → código de 6 dígitos por correo (`lib/auth/email.ts`: Resend con `RESEND_API_KEY`; sin clave en desarrollo se imprime en la consola del servidor como `[auth] código de verificación para …`) → `/api/auth/verify` marca `emailVerifiedAt` e inicia la sesión. Sin verificar no hay sesión.
+- Registro → código de 6 dígitos por correo (`lib/auth/email.ts`: Brevo con `BREVO_API_KEY` + `EMAIL_FROM` = remitente verificado en Brevo, si no Resend con `RESEND_API_KEY`; sin clave en desarrollo se imprime en la consola del servidor como `[auth] código de verificación para …`) → `/api/auth/verify` marca `emailVerifiedAt` e inicia la sesión. Sin verificar no hay sesión.
 - Bloqueo de login por correo en `lib/auth/throttle.ts` (tabla `LoginThrottle`): 3 fallos libres, luego 30 s duplicando hasta 15 min; responde 429 con `details.retryAfter`.
 - Sesión en la cookie firmada `cai_session` (30 días, `lib/session/cookie.ts`). Se escribe/borra con `startSession` / `endSession` / `rotateDeviceId` de `lib/session/user.ts`, solo desde route handlers.
 - **Siempre obtén el usuario con `getCurrentUser()` / `requireUser()`**: devuelve la cuenta si hay sesión y, si no, el usuario anónimo del dispositivo. Para saber si alguien inició sesión, revisa `user.email` (o `getSessionUserId()` si no quieres crear un usuario de dispositivo).
@@ -49,8 +62,8 @@ Variables de entorno en [.env.example](.env.example). **La app necesita PostgreS
 ## Advertencias
 
 - `/admin` y `/api/admin/*` están **abiertos**: `requireAdmin()` (`lib/auth/admin.ts`) no verifica nada. Toda página/ruta admin debe llamarlo igual, para que activarlo sea un cambio de un archivo (`user.role !== "ADMIN"` → `AdminForbiddenError`).
-- Nunca loguees contraseñas, hashes, endpoints push, claves de suscripción ni textos de reportes. Única excepción: el código de verificación en la consola, solo en desarrollo y sin `RESEND_API_KEY`.
+- Nunca loguees contraseñas, hashes, endpoints push, claves de suscripción ni textos de reportes. Única excepción: el código de verificación en la consola, solo en desarrollo y sin clave de correo. Nunca pidas ni aceptes que el usuario pegue claves de API en el chat: van solo en su `.env`.
 - Next.js 16.4.0 muestra un aviso de vulnerabilidad conocida y detiene `next build` / `next dev` la primera vez; al reintentar continúa. `next dev` también (re)genera `AGENTS.md`.
 - Para probar en local sin tocar otra base: hay PostgreSQL 18 instalado en `C:\Program Files\PostgreSQL\18`.
 - Push: cada envío debe terminar en una notificación visible (`public/sw.js`), por exigencia de iOS.
-- Tras cambiar `prisma/schema.prisma`: `npx prisma generate` y `pnpm db:push` contra la base.
+- Tras cambiar `prisma/schema.prisma`: `node_modules/.bin/prisma generate` y `pnpm db:push` contra la base (el usuario debe correr `db:push` en su máquina para crear las columnas/tablas nuevas).

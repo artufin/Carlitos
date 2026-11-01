@@ -9,6 +9,8 @@ const serverSchema = z.object({
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().default("mailto:cai@uc.cl"),
   CRON_SECRET: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default("CAi <onboarding@resend.dev>"),
   PUSH_CONCURRENCY: z.coerce.number().int().positive().default(10),
   PUSH_MAX_RECIPIENTS_PER_INVOCATION: z.coerce.number().int().positive().default(200),
   NEXT_PUBLIC_APP_URL: z.string().optional(),

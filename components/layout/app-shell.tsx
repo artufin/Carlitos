@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { AccountLink } from "@/components/layout/account-link";
 import { BottomNav } from "@/components/layout/bottom-nav";
 
 /** Routes rendered full-screen without header or bottom navigation. */
@@ -26,12 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
             <span className="sr-only">Centro de Alumnos de Ingeniería</span>
           </Link>
-          <Link
-            href="/login"
-            className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-          >
-            Ingresar
-          </Link>
+          <AccountLink />
         </div>
       </header>
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-4 pb-24">{children}</main>

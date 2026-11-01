@@ -48,3 +48,33 @@ export async function verifyDeviceCookie(value: string | undefined, secret: stri
   const expected = await hmac(secret, deviceId);
   return timingSafeEqual(expected, signature) ? deviceId : null;
 }
+
+// Account session cookie: set after register/login, points at a real user.
+// The signed payload is prefixed with "session:" so a device cookie can never
+// be replayed as a session cookie, and it carries its own expiry.
+
+export const SESSION_COOKIE = "cai_session";
+export const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // thirty days
+
+/** Builds the cookie value `<userId>.<expiresAtSeconds>.<signature>`. */
+export async function signSession(userId: string, secret: string, now = Date.now()): Promise<string> {
+  const expiresAt = Math.floor(now / 1000) + SESSION_COOKIE_MAX_AGE;
+  const payload = `${userId}.${expiresAt}`;
+  return `${payload}.${await hmac(secret, `session:${payload}`)}`;
+}
+
+/** Returns the user id if the session cookie is well formed, correctly signed and not expired. */
+export async function verifySessionCookie(
+  value: string | undefined,
+  secret: string,
+  now = Date.now(),
+): Promise<string | null> {
+  if (!value) return null;
+  const parts = value.split(".");
+  if (parts.length !== 3) return null;
+  const [userId, expiresAt, signature] = parts;
+  if (!UUID_RE.test(userId) || !/^\d+$/.test(expiresAt)) return null;
+  if (Number(expiresAt) * 1000 <= now) return null;
+  const expected = await hmac(secret, `session:${userId}.${expiresAt}`);
+  return timingSafeEqual(expected, signature) ? userId : null;
+}

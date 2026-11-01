@@ -17,16 +17,23 @@ enum UserRole {
   ADMIN
 }
 
-/// A user. In the MVP every user is an anonymous "device user" identified by
-/// the signed cookie (deviceId). When real auth lands, `email` is filled and
-/// the device user is migrated to the real one (see docs/DECISIONS.md).
+/// A user. Visitors are anonymous "device users" identified by the signed
+/// device cookie (deviceId). Registering creates a separate account row that
+/// stays unverified until the emailed code is entered; verifying or logging in
+/// merges the device user into the account (see lib/auth/auth-service.ts and
+/// docs/DECISIONS.md -> "Cuentas").
 model User {
-  id        String   @id @default(uuid())
-  deviceId  String   @unique
-  email     String?  @unique
-  role      UserRole @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String    @id @default(uuid())
+  deviceId        String    @unique
+  email           String?   @unique
+  name            String?
+  /// scrypt hash from lib/auth/password.ts. Null for anonymous device users.
+  passwordHash    String?
+  /// Set when the user enters the code sent to `email`. No session before that.
+  emailVerifiedAt DateTime?
+  role            UserRole  @default(USER)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   topics        UserTopic[]
   subscriptions PushSubscription[]
@@ -192,19 +199,33 @@ model Report {
   @@index([status, createdAt])
 }
 
-/// NOT IMPLEMENTED (MVP): one-time login codes for the future email auth.
+/// One-time email verification codes (6 digits, stored as an HMAC). Only the
+/// newest unconsumed code of a user is valid; it expires and allows a limited
+/// number of wrong guesses (lib/auth/auth-service.ts).
 model LoginCode {
   id         String    @id @default(uuid())
   email      String
   codeHash   String
   expiresAt  DateTime
   consumedAt DateTime?
+  /// Wrong guesses against this code.
+  attempts   Int       @default(0)
   createdAt  DateTime  @default(now())
   userId     String?
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([email, createdAt])
+}
+
+/// Failed password logins per email, for the progressive lockout in
+/// lib/auth/throttle.ts. Keyed by email (not user) so unknown emails are
+/// throttled the same way and do not reveal whether an account exists.
+model LoginThrottle {
+  email       String    @id
+  failures    Int       @default(0)
+  lockedUntil DateTime?
+  updatedAt   DateTime  @updatedAt
 }
 
 enum InteractionType {
